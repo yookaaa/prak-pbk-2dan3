@@ -1,47 +1,83 @@
-<script setup>
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
-</script>
-
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did it!" />
+  <div class="app">
+    <div class="logo-section">
+      <img src="https://cdn-icons-png.flaticon.com/512/2910/2910768.png" alt="Logo" class="logo" />
+      <h1>🗒️ To Do List</h1>
     </div>
-  </header>
 
-  <main>
-    <TheWelcome />
-  </main>
+    <form @submit.prevent="addTask" class="form">
+      <input
+        v-model="newTask"
+        type="text"
+        placeholder="Masukkan kegiatan anda..."
+        class="input"
+      />
+      <button type="submit" class="btn-add">
+        ➕ Tambah
+      </button>
+    </form>
+
+    <div class="filter-buttons">
+      <button @click="filter = 'all'" :class="{ active: filter === 'all' }">
+        Semua
+      </button>
+      <button @click="filter = 'unfinished'" :class="{ active: filter === 'unfinished' }">
+        Belum Selesai
+      </button>
+    </div>
+
+    <transition-group name="task-list" tag="ul" class="task-list">
+      <li
+        v-for="(task, index) in filteredTasks"
+        :key="task.id"
+        :class="{ completed: task.completed }"
+        class="task-item"
+      >
+        <div class="task-content">
+          <input type="checkbox" v-model="task.completed" />
+          <span class="check-icon" v-if="task.completed">✔️</span>
+          <span class="task-text">{{ task.text }}</span>
+        </div>
+        <button @click="removeTask(index)" class="btn-cancel">
+          <i class="bi bi-trash"></i>
+        </button>
+      </li>
+    </transition-group>
+  </div>
 </template>
 
-<style scoped>
-header {
-  line-height: 1.5;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-}
-</style>
+<script>
+export default {
+  data() {
+    return {
+      newTask: '',
+      tasks: [],
+      filter: 'all',
+    };
+  },
+  computed: {
+    filteredTasks() {
+      if (this.filter === 'unfinished') {
+        return this.tasks.filter(task => !task.completed);
+      }
+      return this.tasks;
+    },
+  },
+  methods: {
+    addTask() {
+      const trimmed = this.newTask.trim();
+      if (trimmed) {
+        this.tasks.push({
+          text: trimmed,
+          completed: false,
+          id: Date.now() + Math.random(),
+        });
+        this.newTask = '';
+      }
+    },
+    removeTask(index) {
+      this.tasks.splice(index, 1);
+    },
+  },
+};
+</script>
