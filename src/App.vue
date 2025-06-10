@@ -40,11 +40,11 @@
         :class="{ completed: task.completed }"
         class="task-item"
       >
-        <div class="task-content custom-checkbox-container">
+        <label class="task-content custom-checkbox-container">
           <input type="checkbox" v-model="task.completed" />
           <span class="checkmark"></span>
           <span class="task-text">{{ task.text }}</span>
-        </div>
+        </label>
         <button @click="removeTask(task.id)" class="btn-cancel" title="Hapus tugas">
           <i class="bi bi-trash"></i>
         </button>
@@ -58,9 +58,9 @@
     </div>
 
     <div class="footer-actions" v-if="tasks.length > 0">
-        <button @click="clearCompleted" class="btn-clear-completed" v-if="completedCount > 0">
-            <i class="bi bi-x-circle-fill"></i> Hapus Tugas Selesai
-        </button>
+      <button @click="clearCompleted" class="btn-clear-completed" v-if="completedCount > 0">
+        <i class="bi bi-x-circle-fill"></i> Hapus Tugas Selesai
+      </button>
     </div>
   </div>
 </template>
@@ -71,41 +71,39 @@ export default {
     return {
       newTask: '',
       tasks: [],
-      filter: 'all', // 'all', 'unfinished', 'completed'
+      filter: 'all',
     };
   },
   computed: {
     filteredTasks() {
-      switch(this.filter) {
+      switch (this.filter) {
         case 'unfinished':
-          return this.tasks.filter(task => !task.completed);
+          return this.tasks.filter((task) => !task.completed);
         case 'completed':
-          return this.tasks.filter(task => task.completed);
+          return this.tasks.filter((task) => task.completed);
         default:
           return this.tasks;
       }
     },
     completedCount() {
-      return this.tasks.filter(task => task.completed).length;
+      return this.tasks.filter((task) => task.completed).length;
     },
     remainingCount() {
-      return this.tasks.filter(task => !task.completed).length;
-    }
+      return this.tasks.filter((task) => !task.completed).length;
+    },
   },
   methods: {
     addTask() {
       const trimmed = this.newTask.trim();
       if (trimmed) {
-        this.tasks.unshift({ // unshift adds to the beginning
+        this.tasks.unshift({
           text: trimmed,
           completed: false,
-          id: Date.now() + Math.random(), // Unique ID
-          createdAt: new Date().toLocaleString('id-ID') // Timestamp
+          id: Date.now() + Math.random(),
+          createdAt: new Date().toLocaleString('id-ID'),
         });
         this.newTask = '';
-        this.saveTasks(); // Save after adding
-        
-        // Auto focus back to input after adding task
+        this.saveTasks();
         setTimeout(() => {
           document.querySelector('.input').focus();
         }, 100);
@@ -113,18 +111,18 @@ export default {
     },
     removeTask(taskId) {
       if (confirm('Yakin ingin menghapus tugas ini?')) {
-        this.tasks = this.tasks.filter(task => task.id !== taskId);
-        this.saveTasks(); // Save after removing
+        this.tasks = this.tasks.filter((task) => task.id !== taskId);
+        this.saveTasks();
       }
     },
     clearCompleted() {
       if (confirm('Yakin ingin menghapus semua tugas yang selesai?')) {
-        this.tasks = this.tasks.filter(task => !task.completed);
-        this.saveTasks(); // Save after clearing completed
+        this.tasks = this.tasks.filter((task) => !task.completed);
+        this.saveTasks();
       }
     },
     getEmptyMessage() {
-      switch(this.filter) {
+      switch (this.filter) {
         case 'unfinished':
           return 'Semua tugas sudah selesai! 🎉';
         case 'completed':
@@ -134,7 +132,7 @@ export default {
       }
     },
     getEmptySubMessage() {
-      switch(this.filter) {
+      switch (this.filter) {
         case 'unfinished':
           return 'Selamat! Anda telah menyelesaikan semua tugas.';
         case 'completed':
@@ -151,12 +149,10 @@ export default {
       if (savedTasks) {
         this.tasks = JSON.parse(savedTasks);
       }
-    }
+    },
   },
   mounted() {
     this.loadTasks();
-    
-    // Add some sample tasks if localStorage is empty for demo (optional, can be removed)
     if (this.tasks.length === 0) {
       setTimeout(() => {
         this.tasks = [
@@ -167,8 +163,7 @@ export default {
         this.saveTasks();
       }, 500);
     }
-
-    document.querySelector('.input').focus(); // Initial focus
+    document.querySelector('.input').focus();
   }
 };
 </script>
