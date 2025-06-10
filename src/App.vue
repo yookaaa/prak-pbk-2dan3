@@ -1,48 +1,67 @@
 <template>
   <div class="app">
     <div class="logo-section">
-      <img src="https://cdn-icons-png.flaticon.com/512/2910/2910768.png" alt="Logo" class="logo" />
-      <h1>🗒️ To Do List</h1>
+      <i class="bi bi-clipboard-check logo"></i>
+      <h1><i class="bi bi-card-checklist"></i> Smart To-Do List</h1>
     </div>
 
     <form @submit.prevent="addTask" class="form">
       <input
         v-model="newTask"
         type="text"
-        placeholder="Masukkan kegiatan anda..."
+        placeholder="Masukkan kegiatan baru..."
         class="input"
       />
       <button type="submit" class="btn-add">
-        ➕ Tambah
+        <i class="bi bi-plus-circle"></i> Tambah
       </button>
     </form>
 
+    <div class="task-count" v-if="tasks.length > 0">
+      Total: {{ tasks.length }} tugas | Selesai: {{ completedCount }} | Tersisa: {{ remainingCount }}
+    </div>
+
     <div class="filter-buttons">
       <button @click="filter = 'all'" :class="{ active: filter === 'all' }">
-        Semua
+        <i class="bi bi-list-ul"></i> Semua ({{ tasks.length }})
       </button>
       <button @click="filter = 'unfinished'" :class="{ active: filter === 'unfinished' }">
-        Belum Selesai
+        <i class="bi bi-clock"></i> Belum Selesai ({{ remainingCount }})
+      </button>
+      <button @click="filter = 'completed'" :class="{ active: filter === 'completed' }">
+        <i class="bi bi-check-circle"></i> Selesai ({{ completedCount }})
       </button>
     </div>
 
-    <transition-group name="task-list" tag="ul" class="task-list">
+    <transition-group name="task-list" tag="ul" class="task-list" v-if="filteredTasks.length > 0">
       <li
-        v-for="(task, index) in filteredTasks"
+        v-for="task in filteredTasks"
         :key="task.id"
         :class="{ completed: task.completed }"
         class="task-item"
       >
-        <div class="task-content">
+        <div class="task-content custom-checkbox-container">
           <input type="checkbox" v-model="task.completed" />
-          <span class="check-icon" v-if="task.completed">✔️</span>
+          <span class="checkmark"></span>
           <span class="task-text">{{ task.text }}</span>
         </div>
-        <button @click="removeTask(index)" class="btn-cancel">
+        <button @click="removeTask(task.id)" class="btn-cancel" title="Hapus tugas">
           <i class="bi bi-trash"></i>
         </button>
       </li>
     </transition-group>
+
+    <div v-else class="empty-state">
+      <i class="bi bi-clipboard-check"></i>
+      <h3>{{ getEmptyMessage() }}</h3>
+      <p>{{ getEmptySubMessage() }}</p>
+    </div>
+
+    <div class="footer-actions" v-if="tasks.length > 0">
+        <button @click="clearCompleted" class="btn-clear-completed" v-if="completedCount > 0">
+            <i class="bi bi-x-circle-fill"></i> Hapus Tugas Selesai
+        </button>
+    </div>
   </div>
 </template>
 
@@ -52,32 +71,104 @@ export default {
     return {
       newTask: '',
       tasks: [],
-      filter: 'all',
+      filter: 'all', // 'all', 'unfinished', 'completed'
     };
   },
   computed: {
     filteredTasks() {
-      if (this.filter === 'unfinished') {
-        return this.tasks.filter(task => !task.completed);
+      switch(this.filter) {
+        case 'unfinished':
+          return this.tasks.filter(task => !task.completed);
+        case 'completed':
+          return this.tasks.filter(task => task.completed);
+        default:
+          return this.tasks;
       }
-      return this.tasks;
     },
+    completedCount() {
+      return this.tasks.filter(task => task.completed).length;
+    },
+    remainingCount() {
+      return this.tasks.filter(task => !task.completed).length;
+    }
   },
   methods: {
     addTask() {
       const trimmed = this.newTask.trim();
       if (trimmed) {
-        this.tasks.push({
+        this.tasks.unshift({ // unshift adds to the beginning
           text: trimmed,
           completed: false,
-          id: Date.now() + Math.random(),
+          id: Date.now() + Math.random(), // Unique ID
+          createdAt: new Date().toLocaleString('id-ID') // Timestamp
         });
         this.newTask = '';
+        this.saveTasks(); // Save after adding
+        
+        // Auto focus back to input after adding task
+        setTimeout(() => {
+          document.querySelector('.input').focus();
+        }, 100);
       }
     },
-    removeTask(index) {
-      this.tasks.splice(index, 1);
+    removeTask(taskId) {
+      if (confirm('Yakin ingin menghapus tugas ini?')) {
+        this.tasks = this.tasks.filter(task => task.id !== taskId);
+        this.saveTasks(); // Save after removing
+      }
     },
+    clearCompleted() {
+      if (confirm('Yakin ingin menghapus semua tugas yang selesai?')) {
+        this.tasks = this.tasks.filter(task => !task.completed);
+        this.saveTasks(); // Save after clearing completed
+      }
+    },
+    getEmptyMessage() {
+      switch(this.filter) {
+        case 'unfinished':
+          return 'Semua tugas sudah selesai! 🎉';
+        case 'completed':
+          return 'Belum ada tugas yang selesai';
+        default:
+          return 'Belum ada tugas';
+      }
+    },
+    getEmptySubMessage() {
+      switch(this.filter) {
+        case 'unfinished':
+          return 'Selamat! Anda telah menyelesaikan semua tugas.';
+        case 'completed':
+          return 'Selesaikan beberapa tugas untuk melihatnya disini.';
+        default:
+          return 'Mulai tambahkan tugas pertama Anda!';
+      }
+    },
+    saveTasks() {
+      localStorage.setItem('todo_tasks', JSON.stringify(this.tasks));
+    },
+    loadTasks() {
+      const savedTasks = localStorage.getItem('todo_tasks');
+      if (savedTasks) {
+        this.tasks = JSON.parse(savedTasks);
+      }
+    }
   },
+  mounted() {
+    this.loadTasks();
+    
+    // Add some sample tasks if localStorage is empty for demo (optional, can be removed)
+    if (this.tasks.length === 0) {
+      setTimeout(() => {
+        this.tasks = [
+          { id: 1, text: 'Belajar Vue.js', completed: false, createdAt: new Date().toLocaleString('id-ID') },
+          { id: 2, text: 'Membuat aplikasi to-do', completed: true, createdAt: new Date().toLocaleString('id-ID') },
+          { id: 3, text: 'Mendesain UI yang menarik', completed: false, createdAt: new Date().toLocaleString('id-ID') }
+        ];
+        this.saveTasks();
+      }, 500);
+    }
+
+    document.querySelector('.input').focus(); // Initial focus
+  }
 };
 </script>
